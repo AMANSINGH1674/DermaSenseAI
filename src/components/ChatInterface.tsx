@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Camera, Loader, Brain, X, Paperclip, FileWarning } from 'lucide-react';
+import { Send, Camera, Loader, Brain, X, Paperclip, FileWarning, CheckCircle, AlertTriangle } from 'lucide-react';
+import { medgemmaService, type ChatMessage as ServiceChatMessage, type MedGemmaResponse } from '../services/medgemmaService';
+import { useAuthStore } from '../store/authStore';
 
 interface Message {
   id: string;
@@ -11,19 +13,23 @@ interface Message {
     url: string;
     type: string;
   };
+  analysis?: MedGemmaResponse;
+  isAnalyzing?: boolean;
 }
 
 const ChatInterface: React.FC = () => {
+  const { user } = useAuthStore();
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      content: 'Hello! I\'m your DermaSenseAI assistant. How can I help you with your skin health today?',
+      content: 'Hello! I\'m your DermaSenseAI assistant powered by Google\'s MedGemma model. I can analyze dermatological images, answer questions about skin conditions, and provide professional insights. How can I help you today?',
       sender: 'ai',
       timestamp: new Date(),
     },
   ]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [chatHistory, setChatHistory] = useState<ServiceChatMessage[]>([]);
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -41,36 +47,65 @@ const ChatInterface: React.FC = () => {
   };
 
   const handleSendMessage = async () => {
-    if (inputMessage.trim() === '') return;
+    if (inputMessage.trim() === '' || !user) return;
+    
+    const messageText = inputMessage.trim();
+    setInputMessage('');
     
     // Add user message to chat
     const userMessage: Message = {
       id: Date.now().toString(),
-      content: inputMessage,
+      content: messageText,
       sender: 'user',
       timestamp: new Date(),
     };
     
     setMessages(prev => [...prev, userMessage]);
-    setInputMessage('');
     setIsLoading(true);
     
     try {
-      // Simulate AI response with MEDGEMMA model integration
-      // In a real implementation, this would call the actual API
-      setTimeout(() => {
-        const aiResponse: Message = {
-          id: (Date.now() + 1).toString(),
-          content: `I've analyzed your question about "${inputMessage}". Based on my dermatological knowledge, I can provide some insights. Please note that this is AI-generated advice and not a substitute for professional medical consultation.`,
-          sender: 'ai',
-          timestamp: new Date(),
-        };
-        
-        setMessages(prev => [...prev, aiResponse]);
-        setIsLoading(false);
-      }, 1500);
+      // Save user message to chat history
+      const serviceChatMessage: ServiceChatMessage = {
+        id: userMessage.id,
+        role: 'user',
+        content: messageText,
+        timestamp: new Date()
+      };
+      await medgemmaService.saveChatMessage(user.id, serviceChatMessage);
+      setChatHistory(prev => [...prev, serviceChatMessage]);
+      
+      // Get AI response using MedGemma
+      const aiResponseText = await medgemmaService.chat(messageText, chatHistory);
+      
+      const aiResponse: Message = {
+        id: (Date.now() + 1).toString(),
+        content: aiResponseText,
+        sender: 'ai',
+        timestamp: new Date(),
+      };
+      
+      setMessages(prev => [...prev, aiResponse]);
+      
+      // Save AI response to chat history
+      const aiServiceChatMessage: ServiceChatMessage = {
+        id: aiResponse.id,
+        role: 'assistant',
+        content: aiResponseText,
+        timestamp: new Date()
+      };
+      await medgemmaService.saveChatMessage(user.id, aiServiceChatMessage);
+      setChatHistory(prev => [...prev, aiServiceChatMessage]);
+      
     } catch (error) {
       console.error('Error getting AI response:', error);
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: 'I apologize, but I\'m having trouble processing your request right now. Please try again later.',
+        sender: 'ai',
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
       setIsLoading(false);
     }
   };
@@ -167,11 +202,17 @@ const ChatInterface: React.FC = () => {
     }
   };
 
-  const sendFileMessage = (file: File) => {
+  const sendFileMessage = async (file: File) => {
+    if (!user) return;
+    
     const fileUrl = URL.createObjectURL(file);
+    const isImage = file.type.startsWith('image/');
+    const isPDF = file.type === 'application/pdf';
+    
+    // Create user message with file
     const message: Message = {
       id: Date.now().toString(),
-      content: `You've uploaded a file: ${file.name}`,
+      content: `I've uploaded ${isImage ? 'an image' : isPDF ? 'a PDF document' : 'a file'}: ${file.name}`,
       sender: 'user',
       timestamp: new Date(),
       file: {
@@ -181,19 +222,80 @@ const ChatInterface: React.FC = () => {
       },
     };
     setMessages(prev => [...prev, message]);
-
-    // Simulate AI response
+    
+    // Create analyzing placeholder message
+    const analyzingMessage: Message = {
+      id: (Date.now() + 1).toString(),
+      content: `Analyzing your ${isImage ? 'dermatological image' : isPDF ? 'medical document' : 'file'} using Google's MedGemma model...`,
+      sender: 'ai',
+      timestamp: new Date(),
+      isAnalyzing: true,
+    };
+    setMessages(prev => [...prev, analyzingMessage]);
     setIsLoading(true);
-    setTimeout(() => {
-      const aiResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        content: `I've received the file "${file.name}". I will analyze it shortly.`,
+
+    try {
+      let analysis: MedGemmaResponse;
+      
+      if (isImage) {
+        // Use MedGemma for image analysis
+        analysis = await medgemmaService.analyzeImage(file);
+      } else if (isPDF) {
+        // Use MedGemma for PDF analysis
+        analysis = await medgemmaService.analyzePDF(file);
+      } else {
+        throw new Error('Unsupported file type');
+      }
+      
+      // Remove analyzing message and add analysis result
+      setMessages(prev => prev.filter(msg => msg.id !== analyzingMessage.id));
+      
+      const analysisMessage: Message = {
+        id: (Date.now() + 2).toString(),
+        content: analysis.analysis,
+        sender: 'ai',
+        timestamp: new Date(),
+        analysis: analysis,
+      };
+      
+      setMessages(prev => [...prev, analysisMessage]);
+      
+      // Save to chat history
+      const serviceChatMessage: ServiceChatMessage = {
+        id: message.id,
+        role: 'user',
+        content: `Uploaded ${file.name}`,
+        timestamp: new Date(),
+        attachmentUrl: fileUrl,
+        attachmentType: isImage ? 'image' : 'pdf'
+      };
+      await medgemmaService.saveChatMessage(user.id, serviceChatMessage);
+      
+      const aiServiceChatMessage: ServiceChatMessage = {
+        id: analysisMessage.id,
+        role: 'assistant',
+        content: analysis.analysis,
+        timestamp: new Date()
+      };
+      await medgemmaService.saveChatMessage(user.id, aiServiceChatMessage);
+      
+    } catch (error) {
+      console.error('Error analyzing file:', error);
+      
+      // Remove analyzing message and add error message
+      setMessages(prev => prev.filter(msg => msg.id !== analyzingMessage.id));
+      
+      const errorMessage: Message = {
+        id: (Date.now() + 2).toString(),
+        content: `I apologize, but I encountered an error while analyzing your ${isImage ? 'image' : isPDF ? 'document' : 'file'}. Please ensure the file is a valid ${isImage ? 'dermatological image' : 'medical document'} and try again.`,
         sender: 'ai',
         timestamp: new Date(),
       };
-      setMessages(prev => [...prev, aiResponse]);
+      
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -257,7 +359,74 @@ const ChatInterface: React.FC = () => {
                   )}
                 </div>
               )}
+              
               <p className="text-sm">{message.content}</p>
+              
+              {/* Show analysis results if available */}
+              {message.analysis && (
+                <div className="mt-3 border-t border-secondary-200 pt-3">
+                  {/* Confidence Score */}
+                  <div className="flex items-center mb-2">
+                    <div className="flex items-center mr-3">
+                      {message.analysis.confidence > 0.8 ? (
+                        <CheckCircle size={16} className="text-green-500 mr-1" />
+                      ) : message.analysis.confidence > 0.6 ? (
+                        <AlertTriangle size={16} className="text-yellow-500 mr-1" />
+                      ) : (
+                        <AlertTriangle size={16} className="text-red-500 mr-1" />
+                      )}
+                      <span className="text-xs text-secondary-600">
+                        Confidence: {Math.round(message.analysis.confidence * 100)}%
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {/* Recommendations */}
+                  {message.analysis.recommendations.length > 0 && (
+                    <div className="mb-2">
+                      <p className="text-xs font-medium text-secondary-700 mb-1">Recommendations:</p>
+                      <ul className="text-xs text-secondary-600 space-y-1">
+                        {message.analysis.recommendations.map((rec, idx) => (
+                          <li key={idx} className="flex items-start">
+                            <span className="w-1 h-1 bg-primary-500 rounded-full mt-2 mr-2 flex-shrink-0"></span>
+                            {rec}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  
+                  {/* Follow-up Questions */}
+                  {message.analysis.followUpQuestions.length > 0 && (
+                    <div className="mt-2">
+                      <p className="text-xs font-medium text-secondary-700 mb-1">Follow-up questions:</p>
+                      <div className="space-y-1">
+                        {message.analysis.followUpQuestions.map((question, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => {
+                              setInputMessage(question);
+                              handleSendMessage();
+                            }}
+                            className="block text-xs text-primary-600 hover:text-primary-700 hover:underline text-left"
+                          >
+                            {question}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {/* Loading indicator for analyzing messages */}
+              {message.isAnalyzing && (
+                <div className="flex items-center mt-2">
+                  <Loader className="animate-spin text-primary-500 mr-2" size={14} />
+                  <span className="text-xs text-primary-600">Processing with MedGemma...</span>
+                </div>
+              )}
+              
               <p className="text-xs text-secondary-500 mt-1">
                 {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </p>
@@ -331,7 +500,7 @@ const ChatInterface: React.FC = () => {
         type="file" 
         ref={fileInputRef}
         className="hidden" 
-        accept="image/*" 
+        accept="image/*,application/pdf" 
         onChange={handleFileUpload}
       />
       
