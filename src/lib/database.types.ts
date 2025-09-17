@@ -20,6 +20,7 @@ export interface Database {
           age: number | null
           skin_type: string | null
           dermatologist: string | null
+          email: string | null
         }
         Insert: {
           id: string
@@ -31,6 +32,7 @@ export interface Database {
           age?: number | null
           skin_type?: string | null
           dermatologist?: string | null
+          email?: string | null
         }
         Update: {
           id?: string
@@ -42,6 +44,7 @@ export interface Database {
           age?: number | null
           skin_type?: string | null
           dermatologist?: string | null
+          email?: string | null
         }
       }
       medical_records: {

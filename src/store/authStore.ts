@@ -224,25 +224,6 @@ export const useAuthStore = create<AuthState>((set) => ({
         throw new Error('Supabase not configured. Please set up your environment variables.');
       }
 
-      // First, get the current profile to ensure we have the latest data
-      const { data: currentProfile, error: fetchError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-
-      if (fetchError) {
-        console.error('Error fetching current profile:', fetchError);
-        throw new Error(`Failed to fetch current profile: ${fetchError.message}`);
-      }
-
-      if (!currentProfile) {
-        console.error('No profile found for user:', user.id);
-        throw new Error('No profile found for current user');
-      }
-
-      console.log('Current profile before update:', currentProfile);
-
       // Perform the update with returning option
       const { data: updatedProfiles, error: updateError } = await supabase
         .from('profiles')
@@ -267,7 +248,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       console.log('Profile updated successfully:', updatedProfile);
       
       // Update the store with the new profile
-      set({ profile: updatedProfile });
+      set({ profile: updatedProfile, isAuthenticated: true });
       
       return updatedProfile;
     } catch (error) {
@@ -277,7 +258,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     } finally {
       set({ isLoading: false });
     }
-  },  // Added comma here
+  },
   
   redirectAfterSignUp: () => {
     window.location.href = '/login';

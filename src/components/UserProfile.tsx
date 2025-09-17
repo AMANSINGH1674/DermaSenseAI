@@ -4,8 +4,29 @@ import { User } from 'lucide-react';
 import EditProfileModal from './EditProfileModal';
 
 export const UserProfile: React.FC = () => {
-  const { profile } = useAuthStore();
+  const { profile, loadUser } = useAuthStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Reload profile data when component mounts or when profile is null
+  useEffect(() => {
+    if (!profile) {
+      console.log('Profile not found, loading user...');
+      loadUser();
+    }
+  }, [profile, loadUser]);
+
+  // Debug log to track profile changes
+  useEffect(() => {
+    console.log('UserProfile - profile changed:', profile);
+  }, [profile]);
+
+  const handleModalClose = () => {
+    setIsModalOpen(false);
+    // Force reload profile when modal closes
+    setTimeout(() => {
+      loadUser();
+    }, 100);
+  };
 
   if (!profile) {
     return (
@@ -34,6 +55,10 @@ export const UserProfile: React.FC = () => {
 
         <div className="mt-6 space-y-3">
           <div className="flex justify-between">
+            <span className="text-secondary-600">Email</span>
+            <span className="font-medium">{profile.email || 'Not set'}</span>
+          </div>
+          <div className="flex justify-between">
             <span className="text-secondary-600">Age</span>
             <span className="font-medium">{profile.age || 'N/A'}</span>
           </div>
@@ -45,6 +70,10 @@ export const UserProfile: React.FC = () => {
             <span className="text-secondary-600">Dermatologist</span>
             <span className="font-medium">{profile.dermatologist || 'N/A'}</span>
           </div>
+          <div className="flex justify-between">
+            <span className="text-secondary-600">Role</span>
+            <span className="font-medium">{profile.role || 'Patient'}</span>
+          </div>
         </div>
 
         <div className="mt-6">
@@ -54,7 +83,7 @@ export const UserProfile: React.FC = () => {
         </div>
       </div>
 
-      <EditProfileModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      <EditProfileModal isOpen={isModalOpen} onClose={handleModalClose} />
     </>
   );
 };

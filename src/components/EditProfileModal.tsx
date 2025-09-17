@@ -8,22 +8,24 @@ interface EditProfileModalProps {
 }
 
 const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onClose }) => {
-  const { profile, updateProfile, user } = useAuthStore();
+  const { profile, updateProfile, user, loadUser } = useAuthStore();
   const [fullName, setFullName] = useState(profile?.full_name || '');
-  const [age, setAge] = useState(profile?.age || '');
+  const [age, setAge] = useState(profile?.age?.toString() || '');
   const [skinType, setSkinType] = useState(profile?.skin_type || '');
   const [dermatologist, setDermatologist] = useState(profile?.dermatologist || '');
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || '');
+  const [email, setEmail] = useState(profile?.email || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
     if (isOpen && profile) {
       setFullName(profile.full_name || '');
-      setAge(profile.age || '');
+      setAge(profile.age?.toString() || '');
       setSkinType(profile.skin_type || '');
       setDermatologist(profile.dermatologist || '');
       setAvatarUrl(profile.avatar_url || '');
+      setEmail(profile.email || '');
     }
   }, [isOpen, profile]);
 
@@ -37,19 +39,33 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onClose }) 
         throw new Error('No user logged in');
       }
 
-      const updates = {
+      // Update all profile fields (database columns now exist)
+      const updates: any = {
         full_name: fullName,
         age: age ? Number(age) : null,
-        skin_type: skinType,
-        dermatologist: dermatologist,
-        avatar_url: avatarUrl,
+        skin_type: skinType || null,
+        dermatologist: dermatologist || null,
+        email: email || null,
       };
+      
+      // Only add avatar_url if it has a value
+      if (avatarUrl) {
+        updates.avatar_url = avatarUrl;
+      }
 
       console.log('Submitting profile update with data:', updates);
+      console.log('Current user ID:', user.id);
+      console.log('Current profile before update:', profile);
 
-      await updateProfile(updates);
+      const updatedProfile = await updateProfile(updates);
 
-      console.log('Profile updated successfully');
+      console.log('Profile updated successfully:', updatedProfile);
+      
+      // Reload profile data to ensure UI is updated
+      await loadUser();
+      
+      console.log('Profile reloaded, new profile:', useAuthStore.getState().profile);
+      
       onClose();
     } catch (err) {
       console.error('Error in EditProfileModal.handleSubmit:', err);
@@ -115,6 +131,18 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onClose }) 
 
           <div className="mb-6">
             <label className="block text-sm font-medium text-secondary-700 mb-2">
+              Email
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-4 py-2 rounded-lg border border-secondary-300 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            />
+          </div>
+
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-secondary-700 mb-2">
               Age
             </label>
             <input
@@ -122,6 +150,8 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onClose }) 
               value={age}
               onChange={(e) => setAge(e.target.value)}
               className="w-full px-4 py-2 rounded-lg border border-secondary-300 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              min="1"
+              max="120"
             />
           </div>
 
@@ -145,13 +175,14 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onClose }) 
 
           <div className="mb-6">
             <label className="block text-sm font-medium text-secondary-700 mb-2">
-              Dermatologist
+              Dermatologist Name
             </label>
             <input
               type="text"
               value={dermatologist}
               onChange={(e) => setDermatologist(e.target.value)}
               className="w-full px-4 py-2 rounded-lg border border-secondary-300 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              placeholder="Enter your dermatologist's name"
             />
           </div>
 
