@@ -22,7 +22,7 @@ const ChatInterface: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      content: 'Hello! I\'m your DermaSenseAI assistant powered by Google\'s MedGemma model. I can analyze dermatological images, answer questions about skin conditions, and provide professional insights. How can I help you today?',
+      content: 'Hello! I\'m your DermaSenseAI assistant, here to help with dermatological guidance and education.\n\n**✅ What I can help with**:\n• Dermatological image analysis guidance\n• Questions about skin conditions\n• Educational content about dermatology\n• Professional medical insights\n• Document review guidance\n\n**⚠️ Important**: This is educational content only. Always consult healthcare professionals for medical decisions and diagnosis.\n\nHow can I help you today?',
       sender: 'ai',
       timestamp: new Date(),
     },

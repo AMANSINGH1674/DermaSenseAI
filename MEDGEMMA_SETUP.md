@@ -1,36 +1,18 @@
-# MedGemma AI Integration Setup Guide
+# DermaSenseAI Educational Platform
 
-This guide will help you set up the Google MedGemma AI model integration for DermaSenseAI.
+DermaSenseAI is an educational dermatology platform that provides comprehensive guidance on skin conditions, image analysis guidance, and medical document review.
 
-## 🚀 Quick Setup
+## 🎯 Features
 
-### 1. Get Hugging Face API Access
+### 1. Educational Chat Assistant
+- Contextual responses about common skin conditions
+- Professional dermatological guidance
+- Proper medical disclaimers and referral recommendations
 
-1. **Create Hugging Face Account**
-   - Go to https://huggingface.co and create an account
-   - Verify your email address
-
-2. **Request MedGemma Model Access**
-   - Visit https://huggingface.co/google/medgemma-4b-it
-   - Click "Request access to this model"
-   - Accept the Health AI Developer Foundation's terms of use
-   - Wait for approval (usually immediate)
-
-3. **Generate API Token**
-   - Go to https://huggingface.co/settings/tokens
-   - Click "New token"
-   - Give it a name (e.g., "DermaSenseAI")
-   - Select "Read" permissions
-   - Copy the generated token
-
-### 2. Configure Environment Variables
-
-Update your `.env.local` file:
-
-```env
-# Hugging Face Configuration
-VITE_HUGGINGFACE_API_KEY=hf_your_actual_token_here
-```
+### 2. Image Analysis Guidance
+- Comprehensive skin condition evaluation guidance
+- ABCDE melanoma screening education
+- Professional referral recommendations
 
 ### 3. Set Up Database Tables
 
