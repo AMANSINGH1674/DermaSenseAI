@@ -1,59 +1,50 @@
-# DermaSenseAI 🔬
+# 🏥 DermaSenseAI - Educational Dermatology Platform
 
-A modern AI-powered dermatology application built with React, TypeScript, and Supabase. DermaSenseAI provides intelligent skin analysis, secure medical record management with blockchain verification, and comprehensive patient profile management.
-
-![DermaSenseAI](https://img.shields.io/badge/React-18-blue?logo=react&logoColor=white)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.5-blue?logo=typescript&logoColor=white)
-![Supabase](https://img.shields.io/badge/Supabase-Backend-green?logo=supabase&logoColor=white)
-![Vite](https://img.shields.io/badge/Vite-5.4-purple?logo=vite&logoColor=white)
+A comprehensive web application providing educational guidance on dermatological conditions, skin health, and medical document analysis.
 
 ## ✨ Features
 
-### 🔐 Authentication & Security
-- Secure user authentication with Supabase Auth
-- Row Level Security (RLS) for data protection
-- JWT-based session management
-- Role-based access control (Patient/Doctor)
+### 🩺 **Intelligent Chat Assistant**
+- Contextual responses about common skin conditions (acne, psoriasis, eczema, moles)
+- Professional dermatological guidance and education
+- Proper medical disclaimers and referral recommendations
+- Conversation history saved to database
 
-### 👤 Profile Management
-- **Comprehensive User Profiles** with editable fields:
-  - Full Name
-  - Email Address
-  - Age
-  - Skin Type (Normal, Oily, Dry, Combination, Sensitive)
-  - Dermatologist Information
-  - Profile Avatar
-- **Real-time Profile Updates** with instant UI synchronization
-- **Form Validation** with proper error handling
+### 📷 **Image Analysis Guidance**
+- Comprehensive skin condition evaluation guidance
+- ABCDE melanoma screening education
+- Professional referral recommendations
+- File upload with drag-and-drop support
 
-### 🤖 AI-Powered Analysis
-- Intelligent skin health scoring
-- Mole detection and analysis
-- Hydration level assessment
-- UV exposure risk evaluation
-- AI-powered recommendations and insights
+### 📄 **Medical Document Review**
+- PDF document analysis guidance
+- Medical report interpretation assistance
+- Key findings and recommendation identification
+- Educational content about medical terminology
 
-### 🔗 Blockchain Verification
-- SHA-256 hashing for medical record integrity
-- Mock blockchain transaction logging
-- Verification status tracking
-- Tamper-proof medical records
+### 🔐 **User Management**
+- Secure authentication with Supabase
+- User profiles and personalization
+- Chat history persistence
+- Row-level security (RLS) implementation
 
-### 📊 Dashboard & Analytics
-- Interactive health metrics dashboard
-- Recent medical records tracking
-- Notification system
-- Appointment scheduling
-- Real-time data visualization
+## 🚀 Tech Stack
 
-## 🚀 Quick Start
+- **Frontend**: React 18, TypeScript, Tailwind CSS
+- **Backend**: Supabase (Database, Auth, Storage)
+- **Build Tool**: Vite
+- **UI Components**: Custom components with Lucide React icons
+- **Animations**: Framer Motion
+- **State Management**: Zustand
+
+## 📦 Installation
 
 ### Prerequisites
 - Node.js 18+ 
-- npm or yarn
+- npm 9+
 - Supabase account
 
-### Installation
+### Setup Steps
 
 1. **Clone the repository**
    ```bash
@@ -66,23 +57,21 @@ A modern AI-powered dermatology application built with React, TypeScript, and Su
    npm install
    ```
 
-3. **Set up environment variables**
-   ```bash
-   cp .env.local.example .env.local
-   ```
-   
-   Update `.env.local` with your Supabase credentials:
+3. **Configure environment variables**
+   Create a `.env.local` file:
    ```env
-   VITE_SUPABASE_URL=https://your-project-ref.supabase.co
-   VITE_SUPABASE_ANON_KEY=your-anon-key-here
+   VITE_SUPABASE_URL=your-supabase-project-url
+   VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
    ```
 
 4. **Set up Supabase database**
-   
-   Go to your Supabase SQL Editor and run the setup script:
-   ```sql
-   -- Run the contents of create-profiles-table.sql
-   -- Then run add-profile-columns.sql to add additional columns
+   Run the SQL files in your Supabase SQL Editor:
+   ```bash
+   # Create user profiles table
+   cat safe-create-profiles-table.sql | supabase db sql
+
+   # Create chat messages table
+   cat create-chat-tables.sql | supabase db sql
    ```
 
 5. **Start the development server**
@@ -91,141 +80,115 @@ A modern AI-powered dermatology application built with React, TypeScript, and Su
    ```
 
 6. **Open your browser**
-   
    Navigate to `http://localhost:5173`
 
-## 🏗️ Tech Stack
-
-### Frontend
-- **React 18** - Modern React with hooks and concurrent features
-- **TypeScript** - Type-safe JavaScript with excellent developer experience
-- **Vite** - Fast build tool and development server
-- **Tailwind CSS** - Utility-first CSS framework with custom color system
-- **Framer Motion** - Smooth animations and transitions
-- **React Router DOM v6** - Client-side routing
-- **Lucide React** - Beautiful, customizable icons
-
-### Backend & Database
-- **Supabase** - Backend-as-a-Service with PostgreSQL
-- **PostgreSQL** - Robust relational database
-- **Row Level Security (RLS)** - Database-level security policies
-- **Real-time subscriptions** - Live data updates
-
-### State Management
-- **Zustand** - Lightweight state management
-- **Custom hooks** - Reusable stateful logic
-- **Async state handling** - Loading states and error management
-
-### Development Tools
-- **ESLint** - Code linting and formatting
-- **TypeScript ESLint** - TypeScript-specific linting rules
-- **PostCSS** - CSS processing and optimization
-- **Vite plugins** - Development and build optimizations
-
-## 📁 Project Structure
-
-```
-src/
-├── components/          # Reusable React components
-│   ├── AuthProvider.tsx # Authentication context wrapper
-│   ├── RequireAuth.tsx  # Route protection component
-│   ├── Layout.tsx       # Main layout with navigation
-│   ├── EditProfileModal.tsx # Profile editing form
-│   └── UserProfile.tsx  # Profile display component
-├── pages/              # Route-level page components
-│   ├── HomePage.tsx    # Landing page
-│   ├── DashboardPage.tsx # Main dashboard
-│   ├── LoginPage.tsx   # Authentication
-│   └── ...            # Other pages
-├── store/              # Zustand state stores
-│   ├── authStore.ts    # Authentication state management
-│   ├── medicalRecordStore.ts # Medical records state
-│   └── notificationStore.ts # Notifications state
-├── lib/                # Utilities and configurations
-│   ├── supabase.ts     # Supabase client configuration
-│   ├── blockchain.ts   # Blockchain verification utilities
-│   └── database.types.ts # TypeScript types from Supabase
-└── App.tsx             # Main application component with routing
-```
-
-## 🗄️ Database Schema
+## 🗃️ Database Schema
 
 ### Profiles Table
 ```sql
-CREATE TABLE public.profiles (
-  id uuid PRIMARY KEY REFERENCES auth.users(id),
+CREATE TABLE profiles (
+  id uuid PRIMARY KEY REFERENCES auth.users,
+  email text,
   full_name text,
   avatar_url text,
-  role text CHECK (role IN ('patient', 'doctor')) DEFAULT 'patient',
-  created_at timestamp with time zone DEFAULT now(),
-  updated_at timestamp with time zone DEFAULT now(),
-  age integer,
-  skin_type text,
-  dermatologist text,
-  email text
+  created_at timestamptz DEFAULT now()
 );
 ```
 
-### Medical Records Table
+### Chat Messages Table
 ```sql
-CREATE TABLE public.medical_records (
+CREATE TABLE chat_messages (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  patient_id uuid REFERENCES public.profiles(id),
-  title text NOT NULL,
-  description text,
-  record_date timestamp with time zone,
-  provider text,
-  blockchain_hash text,
-  verification_status text CHECK (verification_status IN ('pending', 'verified', 'failed')),
-  created_at timestamp with time zone DEFAULT now(),
-  updated_at timestamp with time zone DEFAULT now()
+  user_id uuid REFERENCES profiles(id),
+  role text CHECK (role IN ('user', 'assistant', 'system')),
+  content text NOT NULL,
+  image_url text,
+  attachment_url text,
+  attachment_type text CHECK (attachment_type IN ('image', 'pdf')),
+  created_at timestamptz DEFAULT now()
 );
 ```
 
-## 🛠️ Development Commands
+## 🎯 Usage Examples
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start development server with hot reload |
-| `npm run build` | Build production assets with Vite |
-| `npm run preview` | Preview production build locally |
-| `npm run lint` | Run ESLint on TypeScript/React files |
+### Chat Interface
+Ask questions about dermatological topics:
+- "What are the signs of melanoma?"
+- "Tell me about acne treatment options"
+- "How do I examine a suspicious mole?"
+- "What causes psoriasis flare-ups?"
+
+### Image Upload
+1. Click the camera icon or upload button
+2. Select a dermatological image
+3. Receive comprehensive analysis guidance
+4. Get professional referral recommendations
+
+### PDF Analysis
+1. Upload medical documents or reports
+2. Receive structured review guidance
+3. Get key findings explanations
+4. Understand next steps and follow-up care
+
+## 📋 Available Scripts
+
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
+- `npm run lint` - Run ESLint
+
+## 🏗️ Project Structure
+
+```
+DermaSenseAI/
+├── public/
+│   └── favicon.svg
+├── src/
+│   ├── components/          # React components
+│   │   ├── ChatInterface.tsx
+│   │   ├── AuthProvider.tsx
+│   │   └── ...
+│   ├── lib/                 # Utility libraries
+│   │   ├── supabase.ts
+│   │   └── database.types.ts
+│   ├── pages/               # Page components
+│   │   ├── DashboardPage.tsx
+│   │   ├── LoginPage.tsx
+│   │   └── ...
+│   ├── services/            # Business logic
+│   │   └── medgemmaService.ts
+│   ├── store/               # State management
+│   │   └── authStore.ts
+│   └── main.tsx
+├── .env.local               # Environment variables
+└── package.json
+```
 
 ## 🔧 Configuration
 
-### Environment Variables
-- `VITE_SUPABASE_URL` - Your Supabase project URL
-- `VITE_SUPABASE_ANON_KEY` - Your Supabase anonymous key
-
-### Supabase Configuration
+### Supabase Setup
 1. Create a new Supabase project
-2. Enable Row Level Security on all tables
-3. Set up authentication providers
-4. Run the provided SQL migration scripts
-5. Configure your environment variables
+2. Get your project URL and anon key from Settings → API
+3. Enable Row Level Security (RLS) on all tables
+4. Create the required database tables using provided SQL files
 
-## 🔒 Security Features
+### Environment Variables
+```env
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key-here
+```
 
-- **Row Level Security (RLS)** - Users can only access their own data
-- **JWT Authentication** - Secure token-based authentication
-- **HTTPS Only** - All communications encrypted
-- **Input Validation** - Client and server-side validation
-- **SQL Injection Protection** - Parameterized queries via Supabase
-- **XSS Protection** - React's built-in XSS protection
+## 🚨 Important Disclaimers
 
-## 📱 Responsive Design
+**Medical Disclaimer**: This application provides educational information only and is not intended for medical diagnosis or treatment. Always consult qualified healthcare professionals for medical concerns.
 
-DermaSenseAI is fully responsive and works seamlessly across:
-- 📱 Mobile devices (320px+)
-- 📱 Tablets (768px+)
-- 💻 Desktops (1024px+)
-- 🖥️ Large screens (1440px+)
+**Educational Purpose**: All responses and guidance provided by the system are for educational purposes and should not replace professional medical advice.
 
 ## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
@@ -233,37 +196,21 @@ DermaSenseAI is fully responsive and works seamlessly across:
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 👨‍💻 Author
+## 🆘 Support
 
-**Aman Singh**
-- GitHub: [@AMANSINGH1674](https://github.com/AMANSINGH1674)
-- LinkedIn: [Connect with me](https://linkedin.com/in/your-profile)
+If you encounter any issues or have questions:
+
+1. Check the [TROUBLESHOOTING.md](TROUBLESHOOTING.md) guide
+2. Search existing [GitHub Issues](https://github.com/AMANSINGH1674/DermaSenseAI/issues)
+3. Create a new issue with detailed information
 
 ## 🙏 Acknowledgments
 
-- [Supabase](https://supabase.com) for the amazing backend platform
-- [Tailwind CSS](https://tailwindcss.com) for the utility-first CSS framework
-- [Framer Motion](https://framer.com/motion) for smooth animations
-- [Lucide](https://lucide.dev) for beautiful icons
-- [React](https://react.dev) team for the incredible framework
-
-## 🐛 Bug Reports & Feature Requests
-
-If you encounter any bugs or have feature requests, please:
-1. Check the [Issues](https://github.com/AMANSINGH1674/DermaSenseAI/issues) page
-2. Create a new issue with detailed information
-3. Use the appropriate issue template
-
-## 📊 Project Status
-
-🚀 **Status**: Active Development  
-🔄 **Version**: 0.1.0  
-📅 **Last Updated**: September 2025
+- Built with React and modern web technologies
+- Database and authentication powered by Supabase
+- Medical guidance based on established dermatological practices
+- UI/UX inspired by modern healthcare applications
 
 ---
 
-<div align="center">
-  
-**⭐ Star this repository if you find it helpful!**
-
-</div>
+**⚠️ Remember**: This is an educational platform. For actual medical concerns, always consult with qualified healthcare professionals.
