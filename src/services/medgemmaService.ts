@@ -18,14 +18,56 @@ export interface MedGemmaResponse {
 }
 
 class MedGemmaService {
+  private edgeChatUrl: string | undefined = import.meta.env.VITE_EDGE_CHAT_URL;
+  private edgeApiKey: string | undefined = import.meta.env.VITE_EDGE_API_KEY;
+  private isEdgeEnabled(): boolean {
+    return !!this.edgeChatUrl && typeof this.edgeChatUrl === 'string';
+  }
+
+  private async callEdge<T>(path: string, body: unknown): Promise<T> {
+    if (!this.isEdgeEnabled()) {
+      throw new Error('Edge function not configured');
+    }
+    const url = `${this.edgeChatUrl}${path}`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(this.edgeApiKey ? { Authorization: `Bearer ${this.edgeApiKey}` } : {})
+      },
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      throw new Error(`Edge error ${res.status}: ${text}`);
+    }
+    return await res.json() as T;
+  }
   
   /**
    * Analyze an image - provides dermatological guidance
    */
   async analyzeImage(imageFile: File, prompt: string = "Analyze this dermatological image and provide a detailed medical assessment."): Promise<MedGemmaResponse> {
-    // Simulate processing delay
+    // Prefer backend model if configured
+    try {
+      if (this.isEdgeEnabled()) {
+        // Upload file to Supabase storage to get a URL the backend can access
+        const userId = (await supabase.auth.getUser()).data.user?.id;
+        if (!userId) throw new Error('Not authenticated');
+        const publicUrl = await this.uploadFile(imageFile, userId);
+        const resp = await this.callEdge<MedGemmaResponse>('/analyze-image', {
+          userId,
+          imageUrl: publicUrl,
+          prompt
+        });
+        return resp;
+      }
+    } catch (err) {
+      console.warn('Falling back to client analysis (image):', err);
+    }
+
+    // Fallback mock
     await new Promise(resolve => setTimeout(resolve, 2000));
-    
     return {
       analysis: `**Analysis for ${imageFile.name}**
 
@@ -71,9 +113,25 @@ I've received your dermatological image for analysis. Based on the filename and 
    * Analyze PDF content - provides medical document guidance
    */
   async analyzePDF(pdfFile: File, prompt: string = "Analyze this medical document and provide insights."): Promise<MedGemmaResponse> {
-    // Simulate processing delay
+    // Prefer backend model if configured
+    try {
+      if (this.isEdgeEnabled()) {
+        const userId = (await supabase.auth.getUser()).data.user?.id;
+        if (!userId) throw new Error('Not authenticated');
+        const publicUrl = await this.uploadFile(pdfFile, userId);
+        const resp = await this.callEdge<MedGemmaResponse>('/analyze-pdf', {
+          userId,
+          pdfUrl: publicUrl,
+          prompt
+        });
+        return resp;
+      }
+    } catch (err) {
+      console.warn('Falling back to client analysis (pdf):', err);
+    }
+
+    // Fallback mock
     await new Promise(resolve => setTimeout(resolve, 1500));
-    
     return {
       analysis: `**Document Analysis for ${pdfFile.name}**
 
@@ -121,9 +179,23 @@ I've received your medical document for analysis. Here's comprehensive guidance 
    * General chat - provides dermatological guidance
    */
   async chat(message: string, conversationHistory: ChatMessage[] = []): Promise<string> {
-    // Simulate processing delay
+    // Prefer backend model if configured
+    try {
+      if (this.isEdgeEnabled()) {
+        const userId = (await supabase.auth.getUser()).data.user?.id;
+        if (!userId) throw new Error('Not authenticated');
+        const resp = await this.callEdge<{ content: string }>('/chat', {
+          userId,
+          messages: conversationHistory.concat({ id: `${Date.now()}`, role: 'user', content: message, timestamp: new Date() })
+        });
+        if (resp?.content) return resp.content;
+      }
+    } catch (err) {
+      console.warn('Falling back to client chat:', err);
+    }
+
+    // Fallback mock
     await new Promise(resolve => setTimeout(resolve, 1000));
-    
     const lowerMessage = message.toLowerCase();
     
     // Provide contextual responses based on common dermatology topics
