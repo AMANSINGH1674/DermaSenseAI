@@ -48,18 +48,25 @@ class MedGemmaService {
    * Analyze an image - provides dermatological guidance
    */
   async analyzeImage(imageFile: File, prompt: string = "Analyze this dermatological image and provide a detailed medical assessment."): Promise<MedGemmaResponse> {
-    // Prefer backend model if configured
+    // Try direct file upload to backend first (PanDerm)
     try {
       if (this.isEdgeEnabled()) {
-        // Upload file to Supabase storage to get a URL the backend can access
-        const userId = (await supabase.auth.getUser()).data.user?.id;
-        if (!userId) throw new Error('Not authenticated');
-        const publicUrl = await this.uploadFile(imageFile, userId);
-        const resp = await this.callEdge<MedGemmaResponse>('/analyze-image', {
-          userId,
-          imageUrl: publicUrl,
-          prompt
+        const formData = new FormData();
+        formData.append('file', imageFile);
+        
+        const url = `${this.edgeChatUrl}/analyze-image`;
+        const res = await fetch(url, {
+          method: 'POST',
+          body: formData,
+          headers: this.edgeApiKey ? { Authorization: `Bearer ${this.edgeApiKey}` } : {}
         });
+        
+        if (!res.ok) {
+          const text = await res.text().catch(() => '');
+          throw new Error(`Backend error ${res.status}: ${text}`);
+        }
+        
+        const resp = await res.json() as MedGemmaResponse;
         return resp;
       }
     } catch (err) {
