@@ -14,8 +14,9 @@ const ContactFAQPage: React.FC = () => {
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
   const [chatMessage, setChatMessage] = useState('');
-  const [chatHistory, setChatHistory] = useState<{type: 'user' | 'bot', message: string}[]>([
-    {type: 'bot', message: 'Hello! How can I help you today with DermaSenseAI?'}
+  const [isTyping, setIsTyping] = useState(false);
+  const [chatHistory, setChatHistory] = useState<{type: 'user' | 'bot', message: string, suggestions?: string[]}[]>([
+    {type: 'bot', message: 'Hello! How can I help you today with DermaSenseAI?', suggestions: ['What is DermaSenseAI?', 'Is my data secure?', 'Pricing plans']}
   ]);
   
   const [faqItems, setFaqItems] = useState<FAQItem[]>([
@@ -66,54 +67,100 @@ const ContactFAQPage: React.FC = () => {
     if (!chatMessage.trim()) return;
     
     // Add user message to chat history
-    setChatHistory([...chatHistory, {type: 'user', message: chatMessage}]);
-    
-    // Simulate bot response
+    setChatHistory(prev => [...prev, {type: 'user', message: chatMessage}]);
+    setIsTyping(true);
+
+    // Helper: score similarity against FAQs
+    const findBestFAQ = (input: string) => {
+      const text = input.toLowerCase();
+      let bestIndex = -1;
+      let bestScore = 0;
+      faqItems.forEach((faq, idx) => {
+        const corpus = (faq.question + ' ' + faq.answer).toLowerCase();
+        // keyword overlap scoring
+        const words = text.split(/[^a-z0-9]+/).filter(Boolean);
+        const unique = Array.from(new Set(words));
+        let score = 0;
+        unique.forEach(w => {
+          if (w.length > 3 && corpus.includes(w)) score += 1;
+        });
+        // bonus for substring
+        if (corpus.includes(text)) score += 3;
+        if (score > bestScore) {
+          bestScore = score;
+          bestIndex = idx;
+        }
+      });
+      return bestScore >= 2 ? bestIndex : -1; // threshold
+    };
+
+    const normalized = chatMessage.trim();
+    const lower = normalized.toLowerCase();
+
     setTimeout(() => {
       let botResponse = '';
-      const normalized = chatMessage.trim();
-      const lower = normalized.toLowerCase();
-      
+      let suggestions: string[] | undefined;
+
       // Closing intent
       const isClosing = /(^(no|nope)\b|\b(thanks|thank you|that'?s all|bye|goodbye|cheers|all good)\b)/i.test(normalized);
       if (isClosing) {
-        botResponse = 'Have a good day!';
-        setChatHistory(prev => [...prev, {type: 'bot', message: botResponse}]);
+        botResponse = 'Glad I could help. If anything else comes up, feel free to ask!';
+        suggestions = ['Contact support', 'View FAQs'];
+        setChatHistory(prev => [...prev, {type: 'bot', message: botResponse, suggestions}]);
+        setIsTyping(false);
+        setChatMessage('');
         return;
       }
 
       // Greetings
       if (/\b(hi|hello|hey|good\s?(morning|afternoon|evening))\b/i.test(normalized)) {
         botResponse = 'Hello! How can I help you today with DermaSenseAI?';
-        setChatHistory(prev => [...prev, {type: 'bot', message: botResponse}]);
+        suggestions = ['What is DermaSenseAI?', 'Is my data secure?', 'Pricing plans'];
+        setChatHistory(prev => [...prev, {type: 'bot', message: botResponse, suggestions}]);
+        setIsTyping(false);
+        setChatMessage('');
         return;
       }
 
-      // Long queries: word-count or character-length threshold
-      const isLong = lower.length > 160 || lower.split(/\s+/).length > 30;
-      if (isLong) {
-        botResponse = 'Thank you for your question. Our team will get back to you with more information. Is there anything else I can help you with?';
-        setChatHistory(prev => [...prev, {type: 'bot', message: botResponse}]);
-        return;
-      }
-
-      // Keyword-based quick answers
-      if (lower.includes('blockchain')) {
-        botResponse = 'Our blockchain approach logs diagnostic events immutably for transparency and verification while keeping sensitive data encrypted and private.';
-      } else if (lower.includes('ai') || lower.includes('artificial intelligence')) {
-        botResponse = 'DermaSenseAI analyzes skin images using advanced neural networks, providing confidence scores, risk stratification, and explainable visual heatmaps.';
-      } else if (lower.includes('security') || lower.includes('privacy')) {
-        botResponse = 'We use AES-256 encryption at rest, TLS 1.3 in transit, role-based access, and immutable audit trails to safeguard your data.';
-      } else if (lower.includes('cost') || lower.includes('price') || lower.includes('pricing')) {
-        botResponse = 'We offer flexible plans for clinics and organizations. Please contact our team for tailored pricing details.';
+      // Direct intents
+      if (/(price|pricing|cost|plans)/i.test(lower)) {
+        botResponse = 'We offer flexible plans for clinics and organizations. Tell me a bit about your usage, or I can connect you with our team for tailored pricing.';
+        suggestions = ['Contact sales', 'What features are included?'];
+      } else if (/(security|privacy|hipaa|gdpr|compliance|soc 2|iso)/i.test(lower)) {
+        botResponse = 'We use AES-256 at rest, TLS 1.3 in transit, role-based access, and immutable audit trails. We align with HIPAA, GDPR, SOC 2 Type II, and ISO 27001 controls.';
+        suggestions = ['View security details', 'Is data anonymized?'];
+      } else if (/(integration|ehr|fhir|api)/i.test(lower)) {
+        botResponse = 'Yes, we support standards-based interoperability (including FHIR) and provide APIs for EHR and clinical system integrations.';
+        suggestions = ['Request API docs', 'Schedule a technical call'];
+      } else if (/(accuracy|sensitivity|specificity|performance)/i.test(lower)) {
+        botResponse = 'Our validated models exceed 98% accuracy, 97% sensitivity, and 96% specificity on benchmark datasets. Actual performance varies with image quality and context.';
+        suggestions = ['What affects accuracy?', 'Share validation details'];
+      } else if (/(blockchain|audit|verification)/i.test(lower)) {
+        botResponse = 'We immutably log diagnostic events on blockchain for transparency and verification while keeping sensitive data encrypted and private.';
+        suggestions = ['How do I verify a record?', 'Privacy with blockchain'];
       } else {
-        botResponse = 'Thank you for your question. Our team will get back to you with more information. Is there anything else I can help you with?';
+        // Try FAQ matching
+        const bestIdx = findBestFAQ(normalized);
+        if (bestIdx !== -1) {
+          botResponse = faqItems[bestIdx].answer;
+          suggestions = ['Show more FAQs', 'Contact support'];
+        } else {
+          // Long queries: route to human
+          const isLong = lower.length > 160 || lower.split(/\s+/).length > 30;
+          if (isLong) {
+            botResponse = 'Thanks for the detailed question. I’ve forwarded this to our team for a thorough response. Would you like to share your email to follow up?';
+            suggestions = ['Use form on the left', 'Email support'];
+          } else {
+            botResponse = 'I can help with platform details, security, pricing, and integrations. Would you like me to connect you with our team?';
+            suggestions = ['Contact support', 'View FAQs'];
+          }
+        }
       }
-      
-      setChatHistory(prev => [...prev, {type: 'bot', message: botResponse}]);
-    }, 600);
-    
-    setChatMessage('');
+
+      setChatHistory(prev => [...prev, {type: 'bot', message: botResponse, suggestions}]);
+      setIsTyping(false);
+      setChatMessage('');
+    }, 500);
   };
   
   const toggleFAQ = (index: number) => {
@@ -289,9 +336,41 @@ const ContactFAQPage: React.FC = () => {
                           }`}
                         >
                           {chat.message}
+                          {chat.type === 'bot' && chat.suggestions && chat.suggestions.length > 0 && (
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {chat.suggestions.map((s, i) => (
+                                <button
+                                  key={i}
+                                  onClick={() => {
+                                    setChatMessage(s);
+                                    // submit immediately for quick-reply
+                                    setTimeout(() => {
+                                      const evt = new Event('submit', { bubbles: true, cancelable: true });
+                                      // manually call since we don't have the form element here
+                                      handleChatSubmit({ preventDefault: () => {} } as unknown as React.FormEvent);
+                                    }, 0);
+                                  }}
+                                  className="text-xs px-2 py-1 rounded-full border border-secondary-300 text-secondary-700 hover:bg-secondary-200"
+                                >
+                                  {s}
+                                </button>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))}
+                    {isTyping && (
+                      <div className="flex justify-start">
+                        <div className="bg-secondary-100 text-secondary-700 rounded-lg p-3">
+                          <span className="inline-flex items-center">
+                            <span className="w-2 h-2 bg-secondary-500 rounded-full animate-bounce mr-1"></span>
+                            <span className="w-2 h-2 bg-secondary-400 rounded-full animate-bounce mr-1" style={{ animationDelay: '0.1s' }}></span>
+                            <span className="w-2 h-2 bg-secondary-300 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></span>
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
                 

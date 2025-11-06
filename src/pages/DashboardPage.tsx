@@ -35,7 +35,7 @@ import { UserProfile } from '../components/UserProfile';
 const DashboardPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
-  const { signOut } = useAuthStore();
+  const { signOut, user, profile } = useAuthStore();
   
   // Mock data for the dashboard
   const healthMetrics = [
@@ -175,7 +175,7 @@ const DashboardPage: React.FC = () => {
           >
             <div>
               <h1 className="text-3xl md:text-4xl font-bold mb-2">DermaSenseAI Dashboard</h1>
-              <p className="text-secondary-600">Welcome back, John Doe</p>
+              <p className="text-secondary-600">Welcome back, {profile?.full_name || (user as any)?.user_metadata?.full_name || user?.email || 'there'}</p>
             </div>
             
             <div className="flex space-x-4 mt-4 md:mt-0">
