@@ -201,7 +201,7 @@ I've received your medical document for analysis. Here's comprehensive guidance 
     const lastAssistantText = lastAssistantMessage?.content?.toLowerCase() ?? '';
 
     // Simple acknowledgement / chit‑chat handling
-    const isShortAck = /^(ok|okay|sure|right|yes|yep|yeah|got it|thanks|thank you)$/i.test(lowerMessage);
+    const isShortAck = /^(ok|okay|sure|right|yes|yep|yeah|got it|thanks|thank ?you)$/i.test(lowerMessage);
 
     if (isShortAck) {
       if (lastAssistantText.includes('what specific skin concern')) {
