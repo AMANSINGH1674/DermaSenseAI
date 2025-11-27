@@ -161,6 +161,11 @@ async def analyze_image(file: UploadFile = File(...)):
     label = CLASS_NAMES[idx.item()]
     confidence = float(conf.item())
 
+    # Scale confidence score for display purposes as requested.
+    # Warning: This misrepresents the model's true confidence.
+    # The new range is [0.5, 1.0].
+    confidence = 0.5 + confidence * 0.5
+
     LOW_CONF_THRESHOLD = 0.30
 
     if confidence < LOW_CONF_THRESHOLD:
